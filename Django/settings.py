@@ -79,6 +79,18 @@ WSGI_APPLICATION = 'Django.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'companies',
+        'USER': 'django',
+        'PASSWORD': 'password',
+        'HOST': '192.168.1.180',  # Or an IP Address that your DB is hosted on
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        }
+    },
+
+    'local': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
@@ -127,5 +139,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 
-TEMPLATE_DIRS = (os.path.join(BASE_DIR,  'templates'),)
+#TEMPLATE_DIRS = (os.path.join(BASE_DIR,  'templates'),)
 
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
+}

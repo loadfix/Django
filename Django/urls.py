@@ -17,10 +17,13 @@ from django.conf.urls import include, url
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.urlpatterns import format_suffix_patterns
+from companies import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^music/', include('music.urls'))
+    url(r'^music/', include('music.urls')),
+    url(r'^companies/', include('companies.urls')),
 ]
 
 if settings.DEBUG:

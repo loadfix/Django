@@ -1,0 +1,63 @@
+
+{% extends 'companies/base.html' %}
+
+{% block body %}
+
+<h3>Board Statistics</h3>
+
+<ul>
+    <li>Number of Companies: {{ total_companies }}</li>
+    <li>Number of Directors: {{ total_directors }}</li>
+    <li>Number of Listings: {{ total_listings }} </li>
+    <li>Last Update: {{ last_update }}</li>
+</ul>
+<p>
+    <h4>Board Details</h4>
+    <ul>
+        <li>Board sizes
+             <ul>
+                <li>Number of directors on the board</li>
+                <li>Board Size by exchange</li>
+                <li>Even / odd boards</li>
+                <li>Number of directors by sector</li>
+                 <li>Number of directors on more than one board</li>
+            </ul>
+        </li>
+        <li>Board Age
+            <ul>
+                <li>Average board age, standard deviation, etc</li>
+                <li>Director ages</li>
+                <li>Mean board age by sector</li>
+                <li>Director decade by sector</li>
+                <li>Decades represented by sector</li>
+            </ul>
+        </li>
+        <li>Board Tenure
+            <ul>
+                <li>Average board tenure</li>
+                <li>Director ages</li>
+            </ul>
+        </li>
+        <li>Board Independence
+            <ul>
+                <li>Percentage independent directors</li>
+                <li>Independence by sector</li>
+            </ul>
+        </li>
+        <li>Company Size
+            <ul>
+                <li>Log market cap by number of directors</li>
+                <li>Log market cap by percentage independent directors</li>
+                <li>Log market cap by mean board age</li>
+                <li>Log market cap by std dev age</li>
+            </ul>
+        </li>
+    </ul>
+</p>
+
+
+{{ bokeh_div | safe }}
+{{ bokeh_script | safe }}
+
+
+{% endblock %}

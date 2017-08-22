@@ -1,0 +1,27 @@
+{% extends 'companies/base.html' %}
+
+{% block title %}Director Details{% endblock %}
+
+{% block body %}
+
+<h2>{{ director.name }}</h2>
+
+{% if error_message %}
+    <p><strong>{{ error_message }}</strong></p>
+{% endif %}
+
+<i>Last updated: {{ director.last_updated }}</i>
+<p>
+<ul>
+    {% for director in director.board_memberships_set.all %}
+    <li>{{ company.name }} - {{director.title }}
+        <label for="director{{ forloop.counter }}">
+            {% if director.is_current == True %}
+                <img src="http://i.imgur.com/b9b13Rd.png">
+            {% endif %}
+        </label>
+    </li>
+    {% endfor %}
+</ul>
+</p>
+{% endblock %}

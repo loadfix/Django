@@ -1,0 +1,15 @@
+{% extends 'companies/base.html' %}
+
+{% block title %}Listing Details{% endblock %}
+
+{% block body %}
+
+<h2>{{ listing.ticker }}</h2>
+
+{% if error_message %}
+    <p><strong>{{ error_message }}</strong></p>
+{% endif %}
+
+<i>Last updated: {{ listing.last_updated }}</i>
+
+{% endblock %}

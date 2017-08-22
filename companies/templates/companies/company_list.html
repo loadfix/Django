@@ -1,0 +1,21 @@
+
+{% extends 'companies/base.html' %}
+
+{% block body %}
+
+{% if all_companies %}
+
+    <h3>Company List:</h3>
+    <ul>
+        {% for company in all_companies %}
+        <li><a href="{% url 'companies:detail' company.id %}">{{ company.name }} ({{ company.ticker }})</a></li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+
+    <h3>No companies in the database</h3>
+
+{% endif %}
+
+{% endblock %}

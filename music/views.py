@@ -35,6 +35,7 @@ class AlbumDelete(DeleteView):
     model = Album
     success_url = reverse_lazy('music:index')
 
+
 class UserFormView(View):
     form_class = UserForm
     template_name = 'music/registration_form.html'
