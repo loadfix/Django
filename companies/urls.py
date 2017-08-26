@@ -52,4 +52,7 @@ urlpatterns = [
     # /companies/api/boardmembers/
     url(r'^api/boardmembers/', views.BoardMemberList.as_view(), name='boardmember-api'),
 
+    # /companies/results/
+    url(r'^results/', views.SearchResults.as_view(), name='search-results'),
+
 ]

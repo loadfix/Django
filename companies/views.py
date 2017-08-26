@@ -10,6 +10,7 @@ from django.contrib.auth import authenticate, login
 from django.views import generic
 from django.views.generic import View
 
+from django.db.models import Count
 
 from .models import Company, Director, Listing, Version, BoardMember, Exchange
 from .forms import UserForm
@@ -20,9 +21,25 @@ from .serializer import CompanySerializer, TickerSerializer, DirectorSerializer,
 from django.shortcuts import render, render_to_response
 from bokeh.plotting import figure, output_file, show
 from bokeh.embed import components
+from bokeh.charts import Histogram
 import numpy
 import scipy
 from scipy import special
+
+
+class BoardStatistics:
+    mean = float
+    median = float
+    sd = float
+    even = int
+    odd = int
+
+    def __init__(self, data_array):
+        self.mean = numpy.mean(numpy.array(data_array))
+        self.median =  numpy.median(numpy.array(data_array))
+        self.sd = numpy.std(numpy.array(data_array))
+        self.odd = sum((x%2 for x in data_array))
+        self.even = sum((1-x%2 for x in data_array))
 
 
 # Index Page
@@ -34,9 +51,11 @@ class IndexView(View):
         nyse = Listing.objects.filter(exchange='2').count()
         nasdaq = Listing.objects.filter(exchange='3').count()
         amex = Listing.objects.filter(exchange='1').count()
+        asx = Listing.objects.filter(exchange='4').count()
 
-        exchanges = ["NYSE", "NASDAQ", "AMEX"]
-        values = [nyse, nasdaq, amex]
+
+        exchanges = ["NYSE", "NASDAQ", "AMEX", "ASX"]
+        values = [nyse, nasdaq, amex, asx  ]
 
         # Bar Chart
         plot = figure(plot_width=400,
@@ -51,13 +70,31 @@ class IndexView(View):
 
         script, div = components(plot)
 
+        #average_board_size = BoardMember.objects.values_list('id', flat=True)
+        #average_board_size = BoardMember.objects.all().values('id').query
+        #average_board_size = list(BoardMember.objects.values_list('id', flat=True))
+
+        board_sizes = list(BoardMember.objects.all().values('company').annotate(Count('director')).values_list('director__count', flat=True))
+        board_statistics = BoardStatistics(board_sizes)
+
+        director_ages = list(filter(None, Director.objects.all().values_list('age', flat=True)))
+        director_statistics = BoardStatistics(director_ages)
+
+        plot = Histogram(board_sizes)
+
+        histogram_script, histogram_div = components(plot)
+
         return render(request, self.template_name, {
             'bokeh_script': script,
             'bokeh_div': div,
+            'bokeh_histogram_div': histogram_div,
+            'bokeh_histogram_script': histogram_script,
             'total_companies': Company.objects.count(),
             'total_directors': Director.objects.count(),
             'last_update': str(Version.last_update),
-            'total_listings': Listing.objects.count()
+            'total_listings': Listing.objects.count(),
+            'board_statistics': board_statistics,
+            'director_statistics': director_statistics
         })
 
 # Company List
@@ -68,6 +105,18 @@ class CompanyView(generic.ListView):
 
     def get_queryset(self):
         return Company.objects.all()
+
+
+# Search Results
+class SearchResults(generic.ListView):
+    template_name = 'companies/companies.html'
+    paginate_by = 50
+    context_object_name = 'all_companies'
+
+    def get_queryset(self):
+        query = self.request.GET.get('q')
+        return Company.objects.filter(name__icontains=query)
+
 
 
 # Director List
@@ -220,6 +269,7 @@ class TickerList(APIView):
 class DirectorList(APIView):
     def get(self, request):
         director_name = self.request.query_params.get('name', None)
+        director_search = self.request.query_params.get('search', None)
         director_id = self.request.query_params.get('id', None)
         director_age = self.request.query_params.get('age', None)
         director_sex = self.request.query_params.get('sex', None)
@@ -229,6 +279,9 @@ class DirectorList(APIView):
         if director_name is not None:
             print("Setting director_name to: " + director_name)
             directors = directors.filter(name=director_name)
+
+        if director_search is not None:
+            directors = directors.filter(name__contains=director_search)
 
         if director_id is not None:
             directors = directors.filter(id=director_id)
@@ -345,11 +398,25 @@ class BoardMemberList(APIView):
             return Response(None, status=status.HTTP_404_NOT_FOUND)
 
 
-
 # Company Detail View
 class DetailView(generic.DetailView):
-    model = Company
+    model = Company, BoardMember
+
     template_name = 'companies/detail.html'
+
+    def get(self, request, pk):
+
+        try:
+            percentage_independent = BoardMember.objects.filter(company=pk, is_independent=True).count() / BoardMember.objects.filter(company=pk).count()
+        except Exception as e:
+            percentage_independent = "N/A"
+
+        return render(request, self.template_name, context={
+            'board_members': BoardMember.objects.filter(company=pk),
+            'company': Company.objects.filter(id=pk)[0],
+            'is_independent': BoardMember.objects.filter(company=pk, is_independent=True).count(),
+            'percentage_independent': percentage_independent
+        })
 
 
 # Director Detail View

@@ -4,7 +4,7 @@ import datetime
 
 class Director(models.Model):
     name = models.CharField(max_length=100, null=True)
-    age = models.CharField(max_length=3, null=True)
+    age = models.IntegerField(null=True)
     sex = models.CharField(max_length=1, null=True)
     birthdate = models.DateField(null=True)
     last_updated = models.DateTimeField(null=True)
@@ -36,6 +36,8 @@ class Company(models.Model):
 
 class Exchange(models.Model):
     symbol = models.CharField(max_length=10, null=True)
+    reuters_symbol = models.CharField(max_length=10, null=True)
+    market_watch_symbol = models.CharField(max_length=10, null=True)
 
     def __str__(self):
         return str(self.symbol)

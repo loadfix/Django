@@ -4,7 +4,7 @@
 
 {% block body %}
 
-<h2>{{ director.name }}</h2>
+<h2>{{ director.name }} ({{ director.age }})</h2>
 
 {% if error_message %}
     <p><strong>{{ error_message }}</strong></p>
@@ -13,8 +13,8 @@
 <i>Last updated: {{ director.last_updated }}</i>
 <p>
 <ul>
-    {% for director in director.board_memberships_set.all %}
-    <li>{{ company.name }} - {{director.title }}
+    {% for board in director.boards.all %}
+    <li><a href="{% url 'companies:detail' board.company.id %}">{{ board.company.name }}</a> - {{ board.title }} ({{ board.start_date }})
         <label for="director{{ forloop.counter }}">
             {% if director.is_current == True %}
                 <img src="http://i.imgur.com/b9b13Rd.png">

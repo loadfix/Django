@@ -16,9 +16,9 @@
     <ul>
         <li>Board sizes
              <ul>
-                <li>Number of directors on the board</li>
+                 <li>Number of directors on the board - <b>Mean: {{ board_statistics.mean }} Median: {{ board_statistics.median }} Std: {{ board_statistics.sd }}</b></li>
                 <li>Board Size by exchange</li>
-                <li>Even / odd boards</li>
+                 <li>Even / odd boards - <b>Even: {{ board_statistics.even }} Odd: {{ board_statistics.odd }}</b></li>
                 <li>Number of directors by sector</li>
                  <li>Number of directors on more than one board</li>
             </ul>
@@ -26,7 +26,7 @@
         <li>Board Age
             <ul>
                 <li>Average board age, standard deviation, etc</li>
-                <li>Director ages</li>
+                <li>Director ages Mean: <b>{{ director_statistics.mean }} Median: {{ director_statistics.median }} Std: {{ director_statistics.sd }}</b></li>
                 <li>Mean board age by sector</li>
                 <li>Director decade by sector</li>
                 <li>Decades represented by sector</li>
@@ -58,6 +58,10 @@
 
 {{ bokeh_div | safe }}
 {{ bokeh_script | safe }}
+
+{{ bokeh_histogram_div | safe }}
+{{ bokeh_histogram_script | safe }}
+
 
 
 {% endblock %}

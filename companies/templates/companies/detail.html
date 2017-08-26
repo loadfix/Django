@@ -7,25 +7,92 @@
 <h2>{{ company.name }}</h2>
 
 {% for ticker in company.tickers.all %}
-<h3>{{ ticker }}</h3>
+<h3>Listed as: {{ ticker }} ({{ ticker.exchange }})</h3>
+<p>
+    <a href="http://www.reuters.com/finance/stocks/overview?symbol={{ ticker }}.{{ ticker.exchange.reuters_symbol }}" target="_blank">[Reuters]</a>
+    <a href="https://finance.yahoo.com/quote/88E.AX/profile?p={{ ticker }}.{{ ticker.exchange.reuters_symbol }}" target="_blank">[Yahoo]</a>
+    <a href="https://finance.google.com/finance?q={{ ticker }}.{{ ticker.exchange.reuters_symbol }}" target="_blank">[Google]</a>
+    <a href="http://www.marketwatch.com/investing/stock/{{ ticker }}?countrycode={{ ticker.exchange.market_watch_symbol }} target="_blank"">[MarketWatch]</a>
+
+    {% if ticker.exchage == ASX %}
+        <a href="http://www.asx.com.au/asx/share-price-research/company/{{ ticker }}" target="_blank">[ASX]</a>
+    {% endif %}
+
+</p>
 {% endfor %}
 
 {% if error_message %}
     <p><strong>{{ error_message }}</strong></p>
 {% endif %}
 
+
+<div class="table-striped">
+    <table class="table table-hover">
+        <tr>
+            <td>Market Capitalisation</td>
+            <td>{{ company.market_cap }}</td>
+        </tr>
+        <tr>
+            <td>Founded</td>
+            <td>{{ company.founded }}</td>
+        </tr>
+        <tr>
+            <td>Sector</td>
+            <td>{{ company.sector }}</td>
+        </tr>
+        <tr>
+            <td>Industry:</td>
+            <td> {{ company.industry }}</td>
+        </tr>
+        <tr>
+            <td>Website:</td>
+            <td> {{ company.website }}</td>
+        </tr>
+        <tr>
+            <td>Directors:</td>
+            <td> {{ board_members.count }}</td>
+        </tr>
+        <tr>
+            <td>Independent Directors</td>
+            <td>{{ is_independent }}</td>
+        </tr>
+        <tr>
+            <td>Percentage Independent:</td>
+            <td> {{ percentage_independent }}</td>
+        </tr>
+        <tr>
+            <td>Company ID:</td>
+            <td><a href="{% url 'companies:company-api' %}?id={{ company.id }}">{{ company.id }}</a></td>
+        </tr>
+    </table>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <td>Director</td>
+            <td>Age</td>
+            <td>Title</td>
+        </tr>
+        </thead>
+        <tbody>
+        {% for member in board_members %}
+        <tr>
+            <td><a href="{% url 'companies:director_detail' member.director.id %}">{{ member.director.name }}</a></td>
+            <td>{{ member.director.age }}</td>
+            <td>{{ member.title }}
+                <label for="director{{ forloop.counter }}">
+                    {% if member.is_current == True %}
+                    <img src="http://i.imgur.com/b9b13Rd.png">
+                    {% endif %}
+                </label></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
 <i>Last updated: {{ company.last_updated }}</i>
-<p>
-<ul>
-    {% for director in company.director_set.all %}
-    <li>{{ director.name }} - {{director.title }}
-        <label for="director{{ forloop.counter }}">
-            {% if director.is_current == True %}
-                <img src="http://i.imgur.com/b9b13Rd.png">
-            {% endif %}
-        </label>
-    </li>
-    {% endfor %}
-</ul>
-</p>
+
 {% endblock %}
