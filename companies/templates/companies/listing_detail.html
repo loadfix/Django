@@ -4,9 +4,15 @@
 
 {% block body %}
 
-<h2>{{ listing.ticker }}</h2>
+<h2> <a href="{% url 'companies:detail' listing.company.id %}">{{ listing.company.name }}</a> ({{ listing.ticker }})</h2>
 
-<h3>{{ listing.company.name }}</h3>
+<h3>{{ listing.name }}</h3>
+
+<ul>
+    <li>Price:</li>
+    <li>52 Week High:</li>
+    <li>52 Week Low:</li>
+</ul>
 
 {% if error_message %}
     <p><strong>{{ error_message }}</strong></p>

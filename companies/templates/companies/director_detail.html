@@ -4,14 +4,16 @@
 
 {% block body %}
 
-<h2>{{ director.name }} ({{ director.age }})</h2>
+<h2>{{ director.name }}</h2>
+<h4>Age: {{ director.age }}</h4>
+<h4>Sex: {{ director.sex }}</h4>
 
 {% if error_message %}
     <p><strong>{{ error_message }}</strong></p>
 {% endif %}
 
-<i>Last updated: {{ director.last_updated }}</i>
 <p>
+<h4>Board Memberships:</h4>
 <ul>
     {% for board in director.boards.all %}
     <li><a href="{% url 'companies:detail' board.company.id %}">{{ board.company.name }}</a> - {{ board.title }} ({{ board.start_date }})
@@ -25,3 +27,5 @@
 </ul>
 </p>
 {% endblock %}
+
+<i>Last updated: {{ director.last_updated }}</i>

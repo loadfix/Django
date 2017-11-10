@@ -31,7 +31,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'music.apps.MusicConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'companies.apps.CompaniesConfig',
+    'django.contrib.humanize',
 
 ]
 
@@ -83,7 +83,7 @@ DATABASES = {
         'NAME': 'companies',
         'USER': 'django',
         'PASSWORD': 'password',
-        'HOST': '192.168.1.180',  # Or an IP Address that your DB is hosted on
+        'HOST': '192.168.1.187',  # Or an IP Address that your DB is hosted on
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",

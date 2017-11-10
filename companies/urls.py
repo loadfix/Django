@@ -55,4 +55,6 @@ urlpatterns = [
     # /companies/results/
     url(r'^results/', views.SearchResults.as_view(), name='search-results'),
 
+    # /companies/api/exchanges/
+    url(r'^api/exchanges/', views.ExchangeList.as_view(), name='exchange-api'),
 ]

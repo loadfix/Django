@@ -2,6 +2,7 @@ from django.db import models
 from django.core.urlresolvers import reverse
 import datetime
 
+
 class Director(models.Model):
     name = models.CharField(max_length=100, null=True)
     age = models.IntegerField(null=True)
@@ -18,7 +19,7 @@ class Director(models.Model):
 
 # Company
 class Company(models.Model):
-    name = models.CharField(max_length=100, null=True)
+    name = models.CharField(max_length=250, null=True)
     founded = models.CharField(max_length=4, null=True)
     market_cap = models.FloatField(null=True)
     website = models.CharField(max_length=250, null=True)
@@ -35,9 +36,12 @@ class Company(models.Model):
 
 
 class Exchange(models.Model):
+    name = models.CharField(max_length=100, null=True)
     symbol = models.CharField(max_length=10, null=True)
+    website = models.CharField(max_length=250, null=True)
     reuters_symbol = models.CharField(max_length=10, null=True)
     market_watch_symbol = models.CharField(max_length=10, null=True)
+    last_updated = models.DateTimeField(null=True)
 
     def __str__(self):
         return str(self.symbol)
@@ -45,6 +49,7 @@ class Exchange(models.Model):
 class Listing(models.Model):
     company = models.ForeignKey(Company, related_name='tickers', on_delete=models.CASCADE)
     exchange = models.ForeignKey(Exchange, related_name='exchange', on_delete=models.CASCADE)
+    name = models.CharField(max_length=250, null=True)
     ticker = models.CharField(max_length=10, null=True)
     last_updated = models.DateTimeField(null=True)
     is_current = models.BooleanField(default=True)
@@ -67,3 +72,4 @@ class BoardMember(models.Model):
 
 class Version(models.Model):
     last_update = models.DateTimeField(null=True)
+

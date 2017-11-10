@@ -22,7 +22,6 @@ from companies import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^music/', include('music.urls')),
     url(r'^companies/', include('companies.urls')),
 ]
 

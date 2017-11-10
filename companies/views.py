@@ -14,7 +14,7 @@ from django.db.models import Count
 
 from .models import Company, Director, Listing, Version, BoardMember, Exchange
 from .forms import UserForm
-from .serializer import CompanySerializer, TickerSerializer, DirectorSerializer, BoardMemberSerializer
+from .serializer import CompanySerializer, TickerSerializer, DirectorSerializer, BoardMemberSerializer, ExchangeSerializer
 
 
 # Bokeh
@@ -109,13 +109,18 @@ class CompanyView(generic.ListView):
 
 # Search Results
 class SearchResults(generic.ListView):
-    template_name = 'companies/companies.html'
+    template_name = 'companies/results.html'
     paginate_by = 50
     context_object_name = 'all_companies'
 
-    def get_queryset(self):
+    def get(self, request):
         query = self.request.GET.get('q')
-        return Company.objects.filter(name__icontains=query)
+
+        return render(request, self.template_name, context={
+            'directors': Director.objects.filter(name__icontains=query),
+            'companies': Company.objects.filter(name__icontains=query),
+            'tickers': Listing.objects.filter(ticker__icontains=query)
+        })
 
 
 
@@ -396,6 +401,59 @@ class BoardMemberList(APIView):
                 return Response(None, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(None, status=status.HTTP_404_NOT_FOUND)
+
+class ExchangeList(APIView):
+
+            def get(self, request):
+                exchange_id = self.request.query_params.get('id', None)
+                exchange_name = self.request.query_params.get('name', None)
+                exchange_symbol = self.request.query_params.get('symbol', None)
+                exchange_website = self.request.query_params.get('website', None)
+                exchange_reuters_symbol = self.request.query_params.get('reuters_symbol', None)
+                exchange_market_watch_symbol = self.request.query_params.get('market_watch_symbol', None)
+
+                exchanges = Exchange.objects.all()
+
+                serializer = ExchangeSerializer(exchanges, many=True)
+                return Response(serializer.data)
+
+            def post(self, request):
+                serializer = ExchangeSerializer(data=request.data)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            def put(self, request):
+                try:
+                    serializer = ExchangeSerializer(data=request.data)
+
+                    exchange_id = request.data['id']
+                    instance = Exchange.objects.filter(id=exchange_id)[0]
+                    if serializer.is_valid():
+                        serializer.update(instance)
+                        return Response(None, status=status.HTTP_200_OK)
+                    else:
+                        return Response(None, status=status.HTTP_200_OK)
+                except Exception as e:
+                    # Not found
+                    print(str(e))
+                    print(serializer.error_messages)
+                    print(serializer.errors)
+                    return Response(None, status=status.HTTP_404_NOT_FOUND)
+
+            def delete(self, request):
+                exchange_id = self.request.query_params.get('id', None)
+
+                if exchange_id is not None:
+                    director = BoardMember.objects.filter(id=exchange_id)[0]
+                    try:
+                        director.delete()
+                        return Response(None, status=status.HTTP_200_OK)
+                    except Exception as e:
+                        return Response(None, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response(None, status=status.HTTP_404_NOT_FOUND)
 
 
 # Company Detail View

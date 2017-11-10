@@ -1,0 +1,57 @@
+
+{% extends 'companies/base.html' %}
+
+{% block body %}
+
+{% if companies %}
+
+    <h3>Company List:</h3>
+    <ul>
+        {% for company in companies %}
+        <li>
+            <a href="{% url 'companies:detail' company.id %}">{{ company.name }}</a>
+            {% for ticker in company.tickers.all %}
+            <a href="{% url 'companies:listing_detail' ticker.id %}">({{ ticker }})</a>
+            {% endfor %}
+        </li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+    <h3>No companies matched query</h3>
+{% endif %}
+
+
+{% if directors %}
+
+    <h3>Director List:</h3>
+    <ul>
+        {% for director in directors %}
+        <li>
+            <a href="{% url 'companies:director_detail' director.id %}">{{ director.name }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+    <h3>No directors matched query</h3>
+{% endif %}
+
+
+{% if tickers %}
+
+    <h3>Ticker List:</h3>
+    <ul>
+        {% for listing in tickers %}
+        <li>
+            <a href="{% url 'companies:listing_detail' listing.id %}">{{ listing.ticker }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+{% else %}
+    <h3>No listings matched query</h3>
+{% endif %}
+
+
+{% endblock %}

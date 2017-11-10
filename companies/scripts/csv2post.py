@@ -22,6 +22,7 @@ amex_url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=
 asx_url = "http://www.asx.com.au/asx/research/ASXListedCompanies.csv"
 hkse_url = "https://www.hkex.com.hk/eng/market/sec_tradinfo/stockcode/eisdeqty.htm"
 
+nasdaq_stock_lookup_url = "http://www.nasdaq.com/symbol/"
 
 nasdaq_csv_file = 'nasdaq.csv'
 amex_csv_file = 'amex.csv'
@@ -32,54 +33,97 @@ hkse_csv_file = 'hkse.csv'
 error_messages = []
 debug = True
 
-independent_director_titles = [
-    "Independent Chairman of the Board",
-    "Independent Chairman of the Board of Trustees",
-    "Independent Director",
-    "Independent Non-Executive Chairman of the Board of Responsible Entity",
-    "Independent Non-Executive Chairperson of the Board",
-    "Independent Non-Executive Chairman of the Board",
-    "Independent Non-Executive Director",
-    "Independent Non-Executive Director, Company Secretary",
-    "Independent Trustee",
-    "Non-Executive Director",
-    "Non-Executive Chairman",
-    "Non-Executive Chairman of the Board",
-    "Non-Executive Deputy Chairman of the Board",
-    "Non-Executive Independent Chairman of the Board",
-    "Non-Executive Independent Director",
-    "Non-Executive Independent Director of Responsible Entity",
-    "Non-Executive Member of the Board of Directors",
-    "Member of the Supervisory Board",
 
-    "Lead Independent Non-Executive Director",
+## Sequence:
+#
+# 1. Director / Independent Suffix+Prefix
+# 2. Director / Independent Contains
+# 3. Director / Independent Title
+# 4. Exceptions
+
+title_exceptions = {
+
+    # ['boardmember': xxx, 'is_director': True],
+}
+
+director_contains = [
+    "Deputy Chairman",
+    "Member of the Managing Board",
+    "Member of the Board of Directors",
+    "Member of the Management Board",
+    "Member of the Executive Board",
+]
+
+independent_director_contains = [
+    "Non-Executive Director",
+    "Independent Director",
+    "Independent Non-Executive",
+    "Independent Trustee"
+]
+
+independent_director_prefix = [
+    "External Director"
+    "Independent Chairman",
+    "Independent Non-Executive",
+    "Independent Trustee",
+    "Independent Trust Manager",
+    "Independent Lead",
+    "Independent Vice Chairman",
+    "Independence Chairman",
+    "Lead Independent",
+    "Member of the Supervisory Board",
+    "Non-Executive",
+    "Independent Member of the Board of Directors",
+    "Independent Member of the Supervisory Board",
+    "Independent Member of the Management Board",
+    "Independent Member of the Executive Board",
+]
+
+director_prefix = [
+    "Chairman",
+    "Chairwoman",
+    "Co-Chairman",
+    "Co-Vice Chairman",
+    "Chairperson of the Board",
+    "Deputy Chairman",
+    "Executive Chairman",
+    "Executive Director",
+    "Honorary Director",
+    "Honorary Chairman",
+    "Vice Chairman",
+    "Non Independent"
+]
+
+independent_director_titles = [
+    "Independent Co-Chairman of the Board",
+    "Independent Vice Chairman of the Board of Trustees",
+    "Independent Lead Director",
+    "Independent Member of the Board of Directors",
+    "IndependentTrustee",
+    "Independent Supervisory Director",
+    "Lead Non-Management Director",
     "IndependentChairman of the Board",
-    "Company Secretary, Non-Executive Director, Investor Relations Contact Officer"
 ]
 
 director_titles = [
-    "Chairman",
-    "Chairman of the Board",
-    "Chairman of the Board, Chief Executive Officer",
-    "Chairman of the Executive Board",
-    "Deputy Chairman of the Board",
+    "Acting Chairman of the Board",
+    "Board of Director",
+    "Co-Vice Chairman of the Board",
     "Director",
     "Director of Responsible Entity",
-    "Executive Chairman of the Board",
-    "Executive Chairman of the Board, Chief Executive Officer",
-    "Executive Chairman of the Board, Company Secretary",
+    "Director; Executive Vice President and Chief Operating Officer of Entergy Corporation",
+    "Executive Vice Chairman of the Board of the General Partner",
     "Chairman of the Supervisory Board",
-    "Executive Chairman of the Board, Founder",
-    "Executive Director",
-    "Executive Director, Company Secretary",
     "Executive Non-independent Director",
-    "Member of the Board of Directors",
-    "Member of the Supervisory Board",
-    "Member of the Management Board",
+    "Lead Director",
     "Trustee",
     "Non-Independent Non-Executive Director",
+    "Non-Executive Non-Independent Chairman of the Board",
+    "Non - Independent Director",
+    "Non-Independent Trustee",
     "Acting Executive Chairman of the Board, Chief Executive Officer, Managing Director",
-    "Finance Director, Managing Director, Executive Director, Company Secretary"
+    "Finance Director, Managing Director, Executive Director, Company Secretary",
+    "Chief Operating Officer, Chief Transformation Officer, Member of the Management Board Banking"
 ]
 director_titles.extend(independent_director_titles)
 
@@ -92,7 +136,8 @@ director_suffix = [
     ", Director",
     ", Trustee",
     ", Executive Director",
-    ", Board Member"
+    ", Board Member",
+    ", Non Independent Director"
 ]
 director_suffix.extend(independent_director_suffix)
 
@@ -124,7 +169,7 @@ director_file = "directors.csv"
 # Catch Control-C
 start_time = datetime.datetime.now()
 def signal_handler(signal, frame):
-   end_time = datetime.now()
+   end_time = datetime.datetime.now()
    print(str(end_time - start_time) + " seconds elapsed")
    sys.exit(0)
 
@@ -157,6 +202,17 @@ class Director:
         start_date = ""
         is_independent = False
 
+
+class Listing:
+
+    def __init__(self):
+        listing_id = ""
+        company = ""
+        exchange = ""
+        name = ""
+        ticker = ""
+        last_updated = datetime.datetime.now()
+        is_current = True
 
 
 def getJSONData(url):
@@ -410,6 +466,46 @@ def add_directors():
 ###############
 # New Section #
 # #############
+def getCompanyFromNASDAQ(symbol):
+
+    ticker = symbol
+
+    # Get Symbol name from NASDAQ
+    url = requote_uri(nasdaq_stock_lookup_url + ticker)
+    http = urllib3.PoolManager()
+    r = http.request('GET', url)
+    soup = BeautifulSoup(r.data, 'html.parser')
+
+    if debug:
+        print("getCompanyFromNASDAQ: Getting ticker from " + url)
+    listing_name = soup.find('script', type="application/ld+json").text.split('"name":"')[1].split('"')[0]
+
+    # Get company name from parent company symbol code
+    if '^' in ticker:
+        ticker = ticker.split('^')[0]
+        url = requote_uri(nasdaq_stock_lookup_url + ticker)
+        http = urllib3.PoolManager()
+        r = http.request('GET', url)
+        soup = BeautifulSoup(r.data, 'html.parser')
+
+    try:
+        company_name = soup.find_all('div', id="qwidget-sector-wrap")[1].find('script').text.split('var followObjTitle = "')[1].split('"')[0]
+    except Exception as e:
+        company_name = listing_name
+
+    # Create a new company object
+    company = Company()
+
+    # Create a new listing object
+    listing = Listing()
+
+    company.name = company_name
+    listing.name = listing_name
+    listing.ticker = symbol
+
+    return company, listing
+
+
 def getCompanyFromReuters(symbol, exchange):
 
     if exchange == "AMEX":
@@ -420,6 +516,18 @@ def getCompanyFromReuters(symbol, exchange):
         suffix = ".N"
     if exchange == "NASDAQ":
         suffix = ".O"
+    if exchange == "HKSE":
+        suffix = ".HK"
+        if symbol[0] == "0":
+            # Remove leading zero
+            symbol = symbol[1:]
+
+    # Remove the caret if this is a secondary listing
+    if '^' in symbol:
+        symbol = symbol.split('^')[0] + "_p" + symbol.split('^')[1].lower()
+
+    if '.' in symbol:
+        symbol = symbol.split('.')[0] + symbol.split('.')[1].lower()
 
     reuters_url = "http://www.reuters.com/finance/stocks/overview?symbol="
     url = requote_uri(reuters_url + symbol + suffix)
@@ -451,7 +559,7 @@ def getCompanyFromReuters(symbol, exchange):
     try:
         company.market_cap = float(market_cap.strip().split('$')[1].replace(',','')) * 1000000
     except Exception as e:
-        print("Could not calcualte market cap for " + company.name)
+        print("Could not calculate market cap for " + company.name)
         company.market_cap = -1
 
     print("Found company at Reuters: " + company.name)
@@ -461,7 +569,11 @@ def getCompanyFromReuters(symbol, exchange):
 ##################################
 # Adds a company to the database #
 ##################################
-def add_company(company):
+def addCompany(company):
+
+    if debug:
+        print("In add_company")
+        print("Market cap:" + str(company.market_cap))
 
     payload = {
         'name': company.name,
@@ -476,8 +588,18 @@ def add_company(company):
     r = http.urlopen('POST', companies_url, headers=header, body=json.dumps(payload))
     jsondata = json.loads(r.data.decode('utf-8'))
 
-    company.company_id = str(jsondata['id'])
-    print("Created company: " + company.name + "   ID: " + company.company_id)
+    try:
+        company.company_id = str(jsondata['id'])
+        print("addCompanyCreated company: " + company.name + "   ID: " + company.company_id)
+    except Exception as e:
+        print("addCompany: Error getting company ID from " + companies_url)
+        print("addCompany: Received the following payload:")
+        print("--------------------------")
+        print(jsondata)
+        print("--------------------------")
+        print("addCompany: Error returned was " + str(e))
+
+        return None
 
     # Return the newly created company with new company_id
     return company
@@ -503,25 +625,28 @@ def postJSONData(url, payload):
     http = urllib3.PoolManager()
     return http.urlopen('POST', url, headers=header, body=json.dumps(payload))
 
-def add_ticker(ticker, exchange, company):
+def add_ticker(listing, company):
 
-    if exchange == "AMEX":
+    if listing.exchange == "AMEX":
         ex = "1"
-    if exchange == "NYSE":
+    if listing.exchange == "NYSE":
         ex = "2"
-    if exchange == "NASDAQ":
+    if listing.exchange == "NASDAQ":
         ex = "3"
-    if exchange == "ASX":
+    if listing.exchange == "ASX":
         ex = "4"
+    if listing.exchange == "HKSE":
+        ex = "5"
 
     # Check if this ticker is already associated with the company
-    url = requote_uri(ticker_url + "?format=json&ticker=" + ticker + "&exchange=" + ex)
+    url = requote_uri(ticker_url + "?format=json&ticker=" + listing.ticker + "&exchange=" + ex)
     jsondata = getJSONData(url)
 
     if len(jsondata) == 0:
         # Ticker does not exist, add it to the company
         payload = {
-            'ticker': ticker,
+            'ticker': listing.ticker,
+            'name': listing.name,
             'exchange': ex,
             'company': company.company_id
         }
@@ -530,9 +655,9 @@ def add_ticker(ticker, exchange, company):
 
         print(jsondata)
 
-        print("Added ticker " + ticker + " to company " + company.name)
+        print("Added ticker " + listing.ticker + " to company " + company.name)
     else:
-        print("Ticker " + ticker + " already associated to company " + str(company.company_id))
+        print("Ticker " + listing.ticker + " already associated to company " + str(company.company_id))
 
 
 def getDirectorSexFromName(name):
@@ -555,6 +680,10 @@ def isDirector(title):
         if title.endswith(suffix):
             return True
 
+    for prefix in director_prefix:
+        if title.startswith(prefix):
+            return True
+
     return False
 
 
@@ -564,6 +693,10 @@ def isIndependentDirector(title):
 
     for suffix in independent_director_suffix:
         if title.endswith(suffix):
+            return True
+
+    for prefix in independent_director_prefix:
+        if title.startswith(prefix):
             return True
 
     return False
@@ -583,6 +716,11 @@ def getDiretorsFromReuters(ticker, exchange):
         suffix = ".N"
     if exchange == "NASDAQ":
         suffix = ".O"
+    if exchange == "HKSE":
+        suffix = ".HK"
+        if ticker[0] == "0":
+            # Remove leading zero
+            ticker = ticker[1:]
 
     reuters_url = "http://www.reuters.com/finance/stocks/companyOfficers?symbol="
     url = requote_uri(reuters_url + ticker + suffix)
@@ -672,26 +810,27 @@ def getDirectorIDByName(director):
 
     return director
 
-def add_directors(company, ticker, exchange):
+def add_directors(company, listing):
     if company.company_id is -1:
         print("Company ID is not set")
         return
 
     # Get first ticker from company
-    url = requote_uri(boards_url + "?format=json&company=" + company.company_id)
+    url = requote_uri(boards_url + "?format=json&company=" + str(company.company_id))
     jsondata = getJSONData(url)
 
     # Check for exting board members
     if len(jsondata) is not 0:
         print("Company has existing board")
-        for director in jsondata:
+        print(jsondata)
+        for director in range(len(jsondata)):
             print(jsondata[director]['title'])
 
         return
 
     # Else add the board members
     # Get list of directors from Reuters
-    director_array = getDiretorsFromReuters(ticker, exchange)
+    director_array = getDiretorsFromReuters(listing.ticker, listing.exchange)
 
     if director_array is not None:
         print("-----------------------------")
@@ -706,6 +845,7 @@ def add_directors(company, ticker, exchange):
             # See if director already exists
             director = getDirectorIDByName(director)
 
+            # If director does not exist, add the director and store the director_id
             if director.director_id == -1:
                 # Director not found, adding
 
@@ -733,7 +873,7 @@ def add_directors(company, ticker, exchange):
 
                 # Check if object was created
                 if debug:
-                    print("created new director with ID:" + director.director_id + " for company ID: " + company.company_id)
+                    print("created new director with ID:" + str(director.director_id) + " for company ID: " + str(company.company_id))
 
                 # Add director to board
                 if str(director.start_date) == "":
@@ -762,7 +902,41 @@ def add_directors(company, ticker, exchange):
                 print("Added " + director.name + " to board of " + company.name )
 
             else:
-                print("One or more directors exist with Name: " + director.name + " and Age: " + director.age)
+                # Director found with director id!
+
+                # Check if director is already on the board
+                url = requote_uri(boards_url + "?format=json&director=" + str(director.director_id) + "&company=" + str(company.company_id))
+                jsondata = getJSONData(url)
+
+                # Add the director to the board if they are not already on it.
+                if len(jsondata) is 0:
+                    # Add to board
+                    if str(director.start_date) == "":
+                        payload = {
+                            'company': company.company_id,
+                            'director': director.director_id,
+                            'title': director.title,
+                            'is_independent': director.is_independent
+                        }
+                    else:
+                        payload = {
+                            'company': company.company_id,
+                            'director': director.director_id,
+                            'title': director.title,
+                            'start_date': director.start_date,
+                            'is_independent': director.is_independent
+                        }
+
+                    if debug:
+                        print("Sending payload:")
+                        print(payload)
+
+                    r = postJSONData(boards_url, payload)
+                    jsondata = json.loads(r.data.decode('utf-8'))
+                    print(jsondata)
+                    print("Added " + director.name + " to board of " + company.name)
+                else:
+                    print("Director id: " + str(director.director_id) + " is already on board of company id: " + str(company.company_id))
     else:
         print("No directors found at " + company.name)
 
@@ -771,9 +945,47 @@ def add_directors(company, ticker, exchange):
         for position in set(error_messages):
             print("===> " + position)
 
-def process_company(ticker, exchange):
-    # Get the correct name and market cap from Reuters
-    this_company = getCompanyFromReuters(ticker, exchange)
+
+def getListingIDBySymbol(listing):
+
+
+    http = urllib3.PoolManager()
+    url = requote_uri(ticker_url + "?format=json&ticker=" + quote(listing.ticker))
+    r = http.request('GET', url)
+    jsondata = json.loads(r.data.decode('utf-8'))
+    print("getListingIDBySymbol: retrieving: " + url)
+
+    if len(jsondata) == 0:
+        # Ticker symbol not found
+        print("getListingIDBySymbol: Did not find ticker: " + listing.ticker)
+        listing.listing_id = -1
+    else:
+        # More than one lising with the same name found
+        listing.listing_id = jsondata[0]['id']
+        print("getListingIDBySymbol: Found ticker: " + listing.ticker + " with ID: " + str(listing.listing_id))
+
+    return listing
+
+
+def processCompany(ticker, exchange):
+
+    if exchange in ["ASX"]:
+        # Get the correct name and market cap from Reuters
+        this_company = getCompanyFromReuters(ticker, exchange)
+
+    if exchange in ["AMEX", "NASDAQ", "NYSE"]:
+        # Get the company and the ticker name from NASDAQ website
+        this_company, this_listing = getCompanyFromNASDAQ(ticker)
+
+        if this_company is None or this_company.name == "":
+            print("Could not find ticker " + ticker + " at NASDAQ")
+            return None
+
+    if debug:
+        print("processCompany: Got company " + this_company.name + " from NASDAQ")
+
+    this_listing.exchange = exchange
+    this_listing.ticker = ticker
 
     # Check if company already exists in the DB and set company ID
     this_company = getCompanyIDByName(this_company)
@@ -781,21 +993,41 @@ def process_company(ticker, exchange):
     if this_company is None:
         return
 
+    # Company not in database
     if this_company.company_id is -1:
         # Company is not in database, add it
-        print("Company not found in database, adding...")
+        print("processCompany: Company not found in database, adding...")
+
+        # TODO: Debug why market_cap is not defined
+        this_company.market_cap = -1
 
         # Add the company
-        this_company = add_company(this_company)
-
-        # Add the company tickers
-        add_ticker(ticker, exchange, this_company)
-
-        # Add the company directors
-        add_directors(this_company, ticker, exchange)
+        this_company = addCompany(this_company)
 
     else:
-        print("Company " + this_company.name + " already exists, (" + str(this_company.company_id) + ")")
+        print("Company: " + this_company.name + " already exists, (" + str(this_company.company_id) + ")")
+
+        # Company exists, but does the listing exist?
+        this_listing = getListingIDBySymbol(this_listing)
+
+        if this_listing.listing_id is -1:
+            # Listing is not in database, add it
+            print("processCompany: Listing is not found in database, adding: " + this_listing.ticker)
+
+            # Add the  tickers
+            if debug:
+                print("processCompany: Adding " + this_listing.ticker + " to " + this_company.name)
+            add_ticker(this_listing, this_company)
+
+        else:
+            print("processCompany: Listing: " + this_listing.ticker + " already exists, (" + str(this_listing.listing_id) + ")")
+
+    # Add the company tickers
+    add_ticker(this_listing, this_company)
+
+    # Add the company directors
+    add_directors(this_company, this_listing)
+
 
 #######################################
 # Lookup and add listed companies #
@@ -822,18 +1054,21 @@ def process_csv(csv_file, exchange):
         company_list = company_list[1:]
         ticker_column = 0
 
+    if exchange == "HKSE":
+        company_list = company_list[1:]
+        ticker_column = 0
+
     for company in company_list:
-        process_company(company[ticker_column].strip(), exchange)
+        if company is not "":
+            processCompany(company[ticker_column].strip(), exchange)
 
 
 ###################################
 #             Runtime             #
 ###################################
-#add_companies()
-#add_directors()
 #get_csv_files()
 
 #process_csv(asx_csv_file,"ASX")
 #process_csv(amex_csv_file,"AMEX")
-process_csv(nyse_csv_file,"NYSE")
-#process_csv(nasdaq_csv_file,"NASDAQ")
+#process_csv(nyse_csv_file,"NYSE")
+process_csv(nasdaq_csv_file,"NASDAQ")

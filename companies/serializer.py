@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from datetime import datetime
-from .models import Company, Listing, Director, BoardMember
+from .models import Company, Listing, Director, BoardMember, Exchange
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -97,4 +97,25 @@ class BoardMemberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BoardMember
+        fields = '__all__' # Returns all fields
+
+
+class ExchangeSerializer(serializers.ModelSerializer):
+
+    def update(self, exchange):
+        """
+        Update and return an existing `Exchange` instance, given the validated data.
+        """
+        exchange.name = self.data['name']
+        exchange.symbol = self.data['symbol']
+        exchange.website = self.data['website']
+        exchange.reuters_symbol = self.data['reuters_symbol']
+        exchange.market_watch_symbol = self.data['market_watch_symbol']
+        exchange.last_updated = datetime.now()
+        exchange.save()
+
+        return exchange
+
+    class Meta:
+        model = Exchange
         fields = '__all__' # Returns all fields
