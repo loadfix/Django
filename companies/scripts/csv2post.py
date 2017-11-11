@@ -33,7 +33,6 @@ hkse_csv_file = 'hkse.csv'
 error_messages = []
 debug = True
 
-
 ## Sequence:
 #
 # 1. Director / Independent Suffix+Prefix
@@ -223,25 +222,70 @@ def getJSONData(url):
 def get_csv_files():
 
     print("In get files")
-    urllib.request.urlretrieve(asx_url, asx_csv_file)
-    urllib.request.urlretrieve(nyse_url, nyse_csv_file)
-    urllib.request.urlretrieve(nasdaq_url, nasdaq_csv_file)
-    urllib.request.urlretrieve(amex_url, amex_csv_file)
+
+    # ASX
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    http = urllib3.PoolManager()
+    r = http.request('GET', asx_url, preload_content=False)
+    with open(asx_csv_file, 'wb') as out:
+        while True:
+            data = r.read()
+            if not data:
+                break
+            out.write(data)
+    r.release_conn()
+
+    # NYSE
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    http = urllib3.PoolManager()
+    r = http.request('GET', nyse_url, preload_content=False)
+    with open(nyse_csv_file, 'wb') as out:
+        while True:
+            data = r.read()
+            if not data:
+                break
+            out.write(data)
+    r.release_conn()
+
+    # NASDAQ
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    http = urllib3.PoolManager()
+    r = http.request('GET', nasdaq_url, preload_content=False)
+    with open(nyse_csv_file, 'wb') as out:
+        while True:
+            data = r.read()
+            if not data:
+                break
+            out.write(data)
+    r.release_conn()
+
+    # AMEX
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    http = urllib3.PoolManager()
+    r = http.request('GET', amex_url, preload_content=False)
+    with open(amex_csv_file, 'wb') as out:
+        while True:
+            data = r.read()
+            if not data:
+                break
+            out.write(data)
+    r.release_conn()
 
     # Do something special for HKSE as it is a web page
-    with open(hkse_csv_file, 'w') as csvfile:
-        fieldnames = ['symbol', 'name']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-
-        http = urllib3.PoolManager()
-        r = http.request('GET', hkse_url)
-        soup = BeautifulSoup(r.data, "html.parser")
-        stock_table = soup.find_all('table')[0]('td')[0]('tr')[0]('tr')[3]('tr')
-        for x in range(1, len(stock_table)):
-            symbol = stock_table[x]('td')[0].text.strip()
-            stock = stock_table[x]('td')[1].text.strip()
-            writer.writerow({'symbol': symbol, 'name': stock})
+    # with open(hkse_csv_file, 'w') as csvfile:
+    #     fieldnames = ['symbol', 'name']
+    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    #     writer.writeheader()
+    #
+    #     http = urllib3.PoolManager()
+    #     r = http.request('GET', hkse_url)
+    #     soup = BeautifulSoup(r.data, "html.parser")
+    #     stock_table = soup.find_all('table')[0]('td')[0]('tr')[0]('tr')[3]('tr')
+    #     for x in range(1, len(stock_table)):
+    #         symbol = stock_table[x]('td')[0].text.strip()
+    #         stock = stock_table[x]('td')[1].text.strip()
+    #         writer.writerow({'symbol': symbol, 'name': stock})
+    #     r.release_conn()
 
 def ConvertMC(market_cap):
 
@@ -468,7 +512,7 @@ def add_directors():
 # #############
 def getCompanyFromNASDAQ(symbol):
 
-    ticker = symbol
+    ticker = symbol.lower()
 
     # Get Symbol name from NASDAQ
     url = requote_uri(nasdaq_stock_lookup_url + ticker)
@@ -478,7 +522,12 @@ def getCompanyFromNASDAQ(symbol):
 
     if debug:
         print("getCompanyFromNASDAQ: Getting ticker from " + url)
-    listing_name = soup.find('script', type="application/ld+json").text.split('"name":"')[1].split('"')[0]
+    try:
+        listing_name = soup.find('script', type="application/ld+json").text.split('"name":"')[1].split('"')[0]
+    except Exception as e:
+        print(e)
+        print("Error parsing page: " + url)
+
 
     # Get company name from parent company symbol code
     if '^' in ticker:
@@ -1066,9 +1115,9 @@ def process_csv(csv_file, exchange):
 ###################################
 #             Runtime             #
 ###################################
-#get_csv_files()
+get_csv_files()
 
-#process_csv(asx_csv_file,"ASX")
-#process_csv(amex_csv_file,"AMEX")
-#process_csv(nyse_csv_file,"NYSE")
-process_csv(nasdaq_csv_file,"NASDAQ")
+process_csv(asx_csv_file,"ASX")
+process_csv(amex_csv_file,"AMEX")
+process_csv(nyse_csv_file,"NYSE")
+#process_csv(nasdaq_csv_file,"NASDAQ")
