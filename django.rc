@@ -1,0 +1,27 @@
+#! /bin/sh
+# Basic support for IRIX style chkconfig
+###
+# chkconfig: 235 98 55
+# description: Manages the services you are controlling with the chkconfig command
+###
+
+case "$1" in
+  start)
+        echo -n "Starting Django"
+        source /srv/venv/bin/activate
+        cd /srv/django
+        python manage.py runserver 0.0.0.0:8080 >> /var/log/django.log 2>&1 &
+        echo "."
+        ;;
+  stop)
+        echo -n "Stopping django"
+        killall -HUP python
+        echo "."
+        ;;
+
+  *)
+        echo "Usage: /sbin/service django {start|stop}"
+        exit 1
+esac
+
+exit 0
