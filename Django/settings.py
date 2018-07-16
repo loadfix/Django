@@ -79,12 +79,12 @@ WSGI_APPLICATION = 'Django.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'companies',
-        'USER': 'django',
-        'PASSWORD': 'password',
-        'HOST': '192.168.1.187',  # Or an IP Address that your DB is hosted on
-        'PORT': '3306',
+        'ENGINE':   'django.db.backends.mysql',
+        'NAME':     'companies',
+        'USER':     os.environ['RDS_USERNAME'],
+        'PASSWORD': os.environ['RDS_PASSWORD'],
+        'HOST':     os.environ['RDS_HOSTNAME'],  # Or an IP Address that your DB is hosted on
+        'PORT':     os.environ['RDS_PORT'],
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
