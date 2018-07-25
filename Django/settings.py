@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -78,21 +78,21 @@ WSGI_APPLICATION = 'Django.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE':   'django.db.backends.mysql',
-        'NAME':     'companies',
-        'USER':     os.environ['RDS_USERNAME'],
-        'PASSWORD': os.environ['RDS_PASSWORD'],
-        'HOST':     os.environ['RDS_HOSTNAME'],  # Or an IP Address that your DB is hosted on
-        'PORT':     os.environ['RDS_PORT'],
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
-    },
+    # 'default': {
+    #     'ENGINE':   'django.db.backends.mysql',
+    #     'NAME':     'companies',
+    #     'USER':     os.environ['RDS_USERNAME'],
+    #     'PASSWORD': os.environ['RDS_PASSWORD'],
+    #     'HOST':     os.environ['RDS_HOSTNAME'],  # Or an IP Address that your DB is hosted on
+    #     'PORT':     os.environ['RDS_PORT'],
+    #     'OPTIONS': {
+    #         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    #     }
+    # },
 
-    'local': {
+    'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'companies.db')
     }
 }
 
