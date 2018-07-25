@@ -3,19 +3,19 @@ import urllib3
 import urllib.request
 from urllib.parse import quote
 import csv
-import traceback
+# import traceback
 import datetime
 from requests.utils import requote_uri
 import traceback
 from bs4 import BeautifulSoup
 import signal
 
-
 companies_url = "http://127.0.0.1:8000/companies/api/companies/"
 directors_url = "http://127.0.0.1:8000/companies/api/directors/"
 ticker_url = "http://localhost:8000/companies/api/ticker/"
 boards_url = "http://localhost:8000/companies/api/boardmembers/"
 
+# TODO: Move these URLs to the database
 nasdaq_url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=NASDAQ&render=download"
 nyse_url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=NYSE&render=download"
 amex_url = "http://www.nasdaq.com/screening/companies-by-industry.aspx?exchange=AMEX&render=download"
@@ -33,8 +33,7 @@ hkse_csv_file = 'hkse.csv'
 error_messages = []
 debug = True
 
-
-## Sequence:
+# Sequence:
 #
 # 1. Director / Independent Suffix+Prefix
 # 2. Director / Independent Contains
@@ -46,6 +45,7 @@ title_exceptions = {
     # ['boardmember': xxx, 'is_director': True],
 }
 
+# TODO: Move these titles to the database
 director_contains = [
     "Deputy Chairman",
     "Member of the Managing Board",
@@ -141,9 +141,9 @@ director_suffix = [
 ]
 director_suffix.extend(independent_director_suffix)
 
-
+# TODO: Move names to the database
 mens_names = [
-    "James", "Michael", "Peter", "Silvio", "David",  "Robert", "Grant", "John", "Geoffrey", "Ross", "Paul", "Wayne",
+    "James", "Michael", "Peter", "Silvio", "David", "Robert", "Grant", "John", "Geoffrey", "Ross", "Paul", "Wayne",
     "Keith", "Christopher", "Andrew", "Adam", "Matt", "Brett", "Stuart", "Anthony", "Craig", "Frank", "Vincent",
     "Marcus", "Hamish", "Stephen", "Philip", "Bryce", "Ivan", "Alvin", "Alan", "Simon", "Geoff", "Neil", "Nathan",
     "Jeremy", "Charles", "Gregory", "Alasdair", "Ben", "Jeremy", "Peter", "Brian", "Brad", "Graeme", "Colin", "Harald",
@@ -156,26 +156,26 @@ womens_names = [
     "Karen", "Nancy", "Phillipa", "Rebecca",
 ]
 
-
-
 header = {
     'Content-Type': 'application/json'
-    }
+}
 
 company_file = "companies.csv"
 director_file = "directors.csv"
 
-
 # Catch Control-C
 start_time = datetime.datetime.now()
+
+
 def signal_handler(signal, frame):
-   end_time = datetime.datetime.now()
-   print(str(end_time - start_time) + " seconds elapsed")
-   sys.exit(0)
+    end_time = datetime.datetime.now()
+    print(str(end_time - start_time) + " seconds elapsed")
+    sys.exit(0)
 
 
 # Catch Control-C, flush buffer to CSV
 signal.signal(signal.SIGINT, signal_handler)
+
 
 class Company:
 
@@ -189,6 +189,7 @@ class Company:
         industry = ""
         last_updated = datetime.datetime.now()
         is_current = True
+
 
 class Director:
 
@@ -220,8 +221,8 @@ def getJSONData(url):
     r = http.request('GET', url)
     return json.loads(r.data.decode('utf-8'))
 
-def get_csv_files():
 
+def get_csv_files():
     print("In get files")
     urllib.request.urlretrieve(asx_url, asx_csv_file)
     urllib.request.urlretrieve(nyse_url, nyse_csv_file)
@@ -243,31 +244,29 @@ def get_csv_files():
             stock = stock_table[x]('td')[1].text.strip()
             writer.writerow({'symbol': symbol, 'name': stock})
 
-def ConvertMC(market_cap):
 
+def ConvertMC(market_cap):
     if market_cap.startswith("$") and market_cap.endswith("M"):
         try:
             market_cap = float(market_cap.split("$")[1].split("M")[0]) * 1000000
         except Exception as e:
-            print
-            str(e)
+            print(str(e))
 
     elif market_cap.startswith("$") and market_cap.endswith("B"):
         try:
             market_cap = float(market_cap.split("$")[1].split("B")[0]) * 1000000000
         except Exception as e:
-            print
-            str(e)
+            print(str(e))
     else:
         market_cap = 0
 
     return float(market_cap)
 
+
 #################################
 # Add the companies and tickers #
 #################################
 def add_companies():
-
     with open(company_file, 'rt', encoding='utf8') as f:
         reader = csv.reader(f)
         company_list = list(reader)
@@ -361,7 +360,6 @@ def add_directors():
     with open(director_file, 'rt', encoding='utf8') as f:
         reader = csv.reader(f)
         director_list = list(reader)
-
 
     http = urllib3.PoolManager()
 
@@ -467,7 +465,6 @@ def add_directors():
 # New Section #
 # #############
 def getCompanyFromNASDAQ(symbol):
-
     ticker = symbol
 
     # Get Symbol name from NASDAQ
@@ -489,7 +486,9 @@ def getCompanyFromNASDAQ(symbol):
         soup = BeautifulSoup(r.data, 'html.parser')
 
     try:
-        company_name = soup.find_all('div', id="qwidget-sector-wrap")[1].find('script').text.split('var followObjTitle = "')[1].split('"')[0]
+        company_name = \
+        soup.find_all('div', id="qwidget-sector-wrap")[1].find('script').text.split('var followObjTitle = "')[1].split(
+            '"')[0]
     except Exception as e:
         company_name = listing_name
 
@@ -507,7 +506,6 @@ def getCompanyFromNASDAQ(symbol):
 
 
 def getCompanyFromReuters(symbol, exchange):
-
     if exchange == "AMEX":
         suffix = ".A"
     if exchange == "ASX":
@@ -553,11 +551,11 @@ def getCompanyFromReuters(symbol, exchange):
     company = Company()
 
     # Remove semi commas from company nammes
-    company.name = name.replace(';','')
+    company.name = name.replace(';', '')
 
     # Reuters expresses market capitalisation as $38,206.23 (millions)
     try:
-        company.market_cap = float(market_cap.strip().split('$')[1].replace(',','')) * 1000000
+        company.market_cap = float(market_cap.strip().split('$')[1].replace(',', '')) * 1000000
     except Exception as e:
         print("Could not calculate market cap for " + company.name)
         company.market_cap = -1
@@ -566,11 +564,11 @@ def getCompanyFromReuters(symbol, exchange):
 
     return company
 
+
 ##################################
 # Adds a company to the database #
 ##################################
 def addCompany(company):
-
     if debug:
         print("In add_company")
         print("Market cap:" + str(company.market_cap))
@@ -606,7 +604,6 @@ def addCompany(company):
 
 
 def getCompanyIDByName(company):
-
     http = urllib3.PoolManager()
     url = requote_uri(companies_url + "?format=json&name=" + quote(company.name))
     r = http.request('GET', url)
@@ -621,12 +618,13 @@ def getCompanyIDByName(company):
 
     return company
 
+
 def postJSONData(url, payload):
     http = urllib3.PoolManager()
     return http.urlopen('POST', url, headers=header, body=json.dumps(payload))
 
-def add_ticker(listing, company):
 
+def add_ticker(listing, company):
     if listing.exchange == "AMEX":
         ex = "1"
     if listing.exchange == "NYSE":
@@ -661,7 +659,6 @@ def add_ticker(listing, company):
 
 
 def getDirectorSexFromName(name):
-
     for male_name in mens_names:
         if name.startswith(male_name + " "):
             return "M"
@@ -671,6 +668,7 @@ def getDirectorSexFromName(name):
             return "F"
 
     return "U"
+
 
 def isDirector(title):
     if title in director_titles:
@@ -701,8 +699,8 @@ def isIndependentDirector(title):
 
     return False
 
-def getDiretorsFromReuters(ticker, exchange):
 
+def getDiretorsFromReuters(ticker, exchange):
     """ Returns an array of directors """
 
     # Initialise array of directors
@@ -746,7 +744,7 @@ def getDiretorsFromReuters(ticker, exchange):
         try:
             # Check company officers for director positions
             title = str(officer_table.find_all('tr')[y].find_all('td')[3].text.strip())
-            #print("assigned title to: " + title)
+            # print("assigned title to: " + title)
         except Exception as e:
             print(str(e))
             continue
@@ -756,11 +754,12 @@ def getDiretorsFromReuters(ticker, exchange):
             # Create a new director
             this_director = Director()
 
-            #print("Found Director: " + title)
+            # print("Found Director: " + title)
             this_director.title = title
 
             # Get name, age and sex of director
-            this_director.name = str(officer_table.find_all('tr')[y].find_all('td')[0].text.strip()).replace('\xa0',' ')
+            this_director.name = str(officer_table.find_all('tr')[y].find_all('td')[0].text.strip()).replace('\xa0',
+                                                                                                             ' ')
             this_director.age = officer_table.find_all('tr')[y].find_all('td')[1].text.strip()
             if this_director.age == "":
                 this_director.age = ""
@@ -779,20 +778,19 @@ def getDiretorsFromReuters(ticker, exchange):
         else:
             error_messages.append(title)
 
-
     return director_array
 
 
 def getDirectorIDByName(director):
 
-    print("DEBUG:")
-    print("Age:" + str(director.age))
+    if debug:
+        print("DEBUG:")
+        print("Age:" + str(director.age))
 
     if str(director.age) == "":
         url = requote_uri(directors_url + "?name=" + director.name)
     else:
         url = requote_uri(directors_url + "?name=" + director.name + "&age=" + str(director.age))
-
 
     jsondata = getJSONData(url)
 
@@ -809,6 +807,7 @@ def getDirectorIDByName(director):
         director.director_id = 0 - len(jsondata)
 
     return director
+
 
 def add_directors(company, listing):
     if company.company_id is -1:
@@ -873,7 +872,8 @@ def add_directors(company, listing):
 
                 # Check if object was created
                 if debug:
-                    print("created new director with ID:" + str(director.director_id) + " for company ID: " + str(company.company_id))
+                    print("created new director with ID:" + str(director.director_id) + " for company ID: " + str(
+                        company.company_id))
 
                 # Add director to board
                 if str(director.start_date) == "":
@@ -899,13 +899,14 @@ def add_directors(company, listing):
                 r = postJSONData(boards_url, payload)
                 jsondata = json.loads(r.data.decode('utf-8'))
                 print(jsondata)
-                print("Added " + director.name + " to board of " + company.name )
+                print("Added " + director.name + " to board of " + company.name)
 
             else:
                 # Director found with director id!
 
                 # Check if director is already on the board
-                url = requote_uri(boards_url + "?format=json&director=" + str(director.director_id) + "&company=" + str(company.company_id))
+                url = requote_uri(boards_url + "?format=json&director=" + str(director.director_id) + "&company=" + str(
+                    company.company_id))
                 jsondata = getJSONData(url)
 
                 # Add the director to the board if they are not already on it.
@@ -936,7 +937,8 @@ def add_directors(company, listing):
                     print(jsondata)
                     print("Added " + director.name + " to board of " + company.name)
                 else:
-                    print("Director id: " + str(director.director_id) + " is already on board of company id: " + str(company.company_id))
+                    print("Director id: " + str(director.director_id) + " is already on board of company id: " + str(
+                        company.company_id))
     else:
         print("No directors found at " + company.name)
 
@@ -947,8 +949,6 @@ def add_directors(company, listing):
 
 
 def getListingIDBySymbol(listing):
-
-
     http = urllib3.PoolManager()
     url = requote_uri(ticker_url + "?format=json&ticker=" + quote(listing.ticker))
     r = http.request('GET', url)
@@ -968,7 +968,6 @@ def getListingIDBySymbol(listing):
 
 
 def processCompany(ticker, exchange):
-
     if exchange in ["ASX"]:
         # Get the correct name and market cap from Reuters
         this_company = getCompanyFromReuters(ticker, exchange)
@@ -1020,7 +1019,8 @@ def processCompany(ticker, exchange):
             add_ticker(this_listing, this_company)
 
         else:
-            print("processCompany: Listing: " + this_listing.ticker + " already exists, (" + str(this_listing.listing_id) + ")")
+            print("processCompany: Listing: " + this_listing.ticker + " already exists, (" + str(
+                this_listing.listing_id) + ")")
 
     # Add the company tickers
     add_ticker(this_listing, this_company)
@@ -1066,9 +1066,9 @@ def process_csv(csv_file, exchange):
 ###################################
 #             Runtime             #
 ###################################
-#get_csv_files()
+# get_csv_files()
 
-#process_csv(asx_csv_file,"ASX")
-#process_csv(amex_csv_file,"AMEX")
-#process_csv(nyse_csv_file,"NYSE")
-process_csv(nasdaq_csv_file,"NASDAQ")
+# process_csv(asx_csv_file,"ASX")
+# process_csv(amex_csv_file,"AMEX")
+# process_csv(nyse_csv_file,"NYSE")
+process_csv(nasdaq_csv_file, "NASDAQ")
