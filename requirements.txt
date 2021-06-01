@@ -37,4 +37,4 @@ six==1.10.0
 static3==0.7.0
 tornado==4.5.1
 Unidecode==0.4.21
-urllib3==1.22
+urllib3==1.26.5
